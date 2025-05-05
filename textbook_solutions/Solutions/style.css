@@ -1,0 +1,6 @@
+ol li {Margin-top: 0.5em}
+ol li ol li {margin-top: 0.5em}
+h1 {Text-align: Center}
+ol {list-style-type: decimal}
+ol ol {list-style-type: lower-alpha}
+dt {margin-top: 0.5em}

@@ -1,0 +1,6 @@
+print(3+4)
+print(3, 4, 3+4)
+print()
+print(3, 4, end=" ")
+print(3+4)
+print("the answer is ", 3+4)

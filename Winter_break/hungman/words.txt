@@ -1,0 +1,11 @@
+helloworld
+python
+code
+computer
+class
+method
+function
+parameter
+variable
+
+

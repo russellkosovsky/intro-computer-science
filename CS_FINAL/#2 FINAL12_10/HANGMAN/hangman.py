@@ -1,0 +1,282 @@
+# file: ghangman.py
+# Graphical version of hangman
+
+from graphics import *
+from button import Button
+from random import randrange
+
+class HangmanDriver:
+    'Implements a hangman game with a "pluggable" interface'
+    def __init__(self, Interface):
+        self.interface = Interface
+        self.words = self.getWordList("words.txt")
+        
+    def getWordList(self, file):
+        'Reads words from file and RETURNS them in a randomized list'
+        file = open("wordlist.txt", "r")
+        words = []
+        for line in file.readlines():
+            word = line.strip() #Takes out all unnecessary white space.
+            words.append(word.upper())
+        for done in range(len(words)):
+            pos = randrange(done, len(words))
+            words[done], words[pos] = words[pos], words[done]
+        return words
+    
+    def run(self):
+        'plays multiple games of hangman'
+        playAgain = True
+        while playAgain:
+            # assigns first word in list to 'word' and removes it from the list of words
+            word = self.words.pop(0)
+            self.playGame(word)
+            if self.words != []:
+                playAgain = self.interface.askPlayAgain()
+            else:
+                self.interface.outOfWords()
+                playAgain = False
+        self.interface.closing()
+
+    def playGame(self, word):
+        'Plays a single game of hangman with word as the secret' 
+        misses = 0
+        hword = HangmanWord(word)
+        self.interface.reset()
+        self.interface.showWord(hword.getText())
+        while not hword.isComplete() and misses < 7:
+            letter = self.interface.getGuess()
+            hit = hword.guess(letter)
+            if hit:
+                self.interface.showWord(hword.getText())
+            else:
+                misses = misses + 1
+                self.interface.showMiss(misses)
+        if hword.isComplete():
+            self.interface.showWin()
+        else:
+            self.interface.showLoss(word)
+
+class HangmanWord:
+    ''
+    def __init__(self, secret):
+        self.secret = secret
+        self.guesses = []
+            
+    def getText(self):
+        # Get the letter that the user guesses.
+        result = ""
+        for ch in self.secret:
+            if ch in self.guesses:
+                #Insert the guessed letter.
+                result = result + ch
+            else:
+                #Insert an underscore for the letter.
+                result = result + '_'         
+        return result
+    
+    def guess(self, letter):
+        if letter in self.guesses:
+            return 0
+        self.guesses.append(letter)
+        return letter in self.secret
+
+    def isComplete(self):
+        result = self.getText()
+        if '_' in result:
+            return 0
+        else:
+            return 1
+
+class Graphics:
+
+    def __init__(self):
+        
+        # Create the window for the hangman game.
+        self.win = GraphWin('Hangman', 500,500)
+        self.win.setCoords(0,0, 40,25)
+        self.win.setBackground('red3')
+        self.buttonhelper()
+        
+        # Ready to blend deadguy in
+        self.background = "red3"
+        self.gallows()
+
+        # dead guy
+        head = Circle(Point(13,19),2)
+        head.setWidth("4")
+        body = Line(Point(13,17),Point(13,12))
+        body.setWidth("4")
+        Rarm = Line(Point(13,15),Point(16,17))
+        Rarm.setWidth("4")
+        Larm = Line(Point(13,15),Point(10,17))
+        Larm.setWidth("4")
+        Rleg = Line(Point(13,12),Point(15,10))
+        Rleg.setWidth("4")
+        Lleg = Line(Point(13,12),Point(11,10))
+        Lleg.setWidth("4")
+
+        self.deadguy = [head, body, Rarm, Larm, Rleg, Lleg]
+
+        for limb in self.deadguy:
+            limb.setOutline(self.background)
+            limb.draw(self.win)
+
+        # Create wordBox
+        self.wordBox = Text(Point(20,4),"text here")
+        self.wordBox.setFace("courier")
+        self.wordBox.setStyle("bold")
+        self.wordBox.draw(self.win)
+
+        # Miss Box
+        self.misstop = Text(Point(10, 3), "")
+        self.misstop.draw(self.win)
+        self.missbottom = Text(Point(10, 2), "")
+        self.missbottom.draw(self.win)
+
+        # Prompt Box
+        self.text1 = Text(Point(10,5),"The secret word is:")
+        self.text1.draw(self.win)
+
+    # Create 26 buttons that represent the letters of the alphabet
+    # bspecs gives the center coordinate and the label
+    def buttonhelper(self):
+        self.bspecs = [(25,23,'A'),(28,23,'B'),(31,23,'C'),(34,23,'D'),
+            (37,23,'E'),(25,20,'F'),(28,20,'G'),
+            (31,20,'H'),(34,20,'I'),(37,20,'J'),(25,17,'K'),
+            (28,17,'L'),(31,17,'M'),(34,17,'N'),(37,17,'O'),
+            (25,14,'P'),(28,14,'Q'),(31,14,'R'),(34,14,'S'),
+            (37,14,'T'),(25,11,'U'),(28,11,'V'),(31,11,'W'),
+            (34,11,'X'),(37,11,'Y'),(31,8,'Z')]
+        self.buttons = []
+        for cx,cy,label in self.bspecs:
+            self.buttons.append(Button(self.win,Point(cx,cy),2,2,label))
+            for b in self.buttons:
+                b.activate()
+                
+    def gallows(self):
+        bottom = Line(Point(1,7), Point(15,7))
+        bottom.setWidth('2')
+        bottom.draw(self.win)
+        line_up = Line(Point(3,7), Point(3,24))
+        line_up.setWidth('2')
+        line_up.draw(self.win)
+        top = Line(Point(3,24), Point(13,24))
+        top.setWidth('2')
+        top.draw(self.win)
+        line_dn = Line(Point(13,24), Point(13,21))
+        line_dn.setWidth('2')
+        line_dn.draw(self.win)
+
+    def askPlayAgain(self):
+        self.playagainwin = GraphWin("Play Again", 300, 300)
+        playagaintxt = Text(Point(150,250),"Do you want play again?").draw(self.playagainwin)
+        playagainbtn = Button(self.playagainwin, Point(75, 150), 100,30,"Sure")
+        playagainbtn.activate()
+        quitbtn = Button(self.playagainwin, Point(225, 150), 100,30,"Too Scared")
+        quitbtn.activate()
+
+        # happyface
+        happyhead = Circle(Point(75,75),30)
+        happyhead.setFill("yellow")
+        happyhead.draw(self.playagainwin)
+        happylefteye = Circle(Point(65,60),5)
+        happyrighteye = Circle(Point(85,60),5)
+        smile = Polygon(Point(57,80),Point(67,90),Point(82,90),Point(92,80)).draw(self.playagainwin)
+        happylefteye.setFill("black")
+        happylefteye.draw(self.playagainwin)
+        happyrighteye.setFill("black")
+        happyrighteye.draw(self.playagainwin)
+
+        # sadface
+        sadhead = Circle(Point(225,75),30)
+        sadhead.setFill("yellow")
+        sadhead.draw(self.playagainwin)
+        sadlefteye = Circle(Point(215,60),5)
+        sadrighteye = Circle(Point(235,60),5)
+        frown = Polygon(Point(208,90),Point(218,80),Point(233,80),Point(243,90)).draw(self.playagainwin)
+        sadlefteye.setFill("black")
+        sadlefteye.draw(self.playagainwin)
+        sadrighteye.setFill("black")
+        sadrighteye.draw(self.playagainwin)
+        
+        while 1:
+            q = self.playagainwin.getMouse()
+            if playagainbtn.clicked(q):
+                self.playagainwin.close()
+                return 1
+            elif quitbtn.clicked(q):
+                self.playagainwin.close()
+                return 0
+        
+    def reset(self):
+        for limb in self.deadguy:
+            limb.setOutline(self.background)
+        for b in self.buttons:
+            b.activate()
+        self.misstop.setText("")
+        self.missbottom.setText("")
+    
+    def showWord(self, word):
+        display = ''
+        for ch in word:
+            display = display + ch +' '
+            self.wordBox.setText(display)
+
+    def getGuess(self):
+        while 1:
+            pt = self.win.getMouse()
+            for b in self.buttons:
+                if b.clicked(pt):
+                    b.deactivate()
+                    return b.getLabel() #exit method
+        
+    def showMiss(self, num):
+        nums = str(7-num)
+        self.misstop.setText(("You have ") + (nums))
+        self.missbottom.setText("chances left.")
+        if num == 1:
+            self.deadguy[0].setOutline("green3")
+        elif num == 2:
+            self.deadguy[1].setOutline("green3")
+        elif num == 3:
+            self.deadguy[2].setOutline("green3")
+        elif num == 4:
+            self.deadguy[3].setOutline("green3")
+        elif num == 5:
+            self.deadguy[4].setOutline("green3")
+        elif num == 6:
+            self.deadguy[5].setOutline("green3")
+        else:
+            for limb in self.deadguy:
+                limb.setOutline("red3")
+
+    def showWin(self):
+        self.misstop.setText("")
+        self.missbottom.setText("Yeah, You Win!")
+        
+    def showLoss(self, word):
+        self.misstop.setText("")
+        self.missbottom.setText("Bummer, You Lost!")
+        for ch in word:
+            self.wordBox.setText(word)
+
+    def outOfWords(self):
+        outwin = GraphWin("Out of Words", 300, 300)
+        outtext = Text(Point(150, 100), "There are no new words for you.").draw(outwin)
+        outtext2 = Text(Point(150, 150), "Click the window to close.").draw(outwin)
+        outtext3 = Text(Point(150, 200), "Thank you.").draw(outwin)
+        outwin.getMouse()
+        outwin.close()
+
+    def closing(self):
+        self.wordBox.setText("Thank for playing our game.")
+        self.text1.setText("")
+        self.win.close()
+
+def main():
+    interface = Graphics()
+    HangmanDriver(interface).run()
+
+if __name__ == '__main__':
+    main()
+

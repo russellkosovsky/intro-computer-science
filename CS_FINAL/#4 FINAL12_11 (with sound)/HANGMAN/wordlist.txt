@@ -1,0 +1,11 @@
+helloworld
+python
+computer
+code
+class
+method
+function
+string
+integer
+parameter
+loop
